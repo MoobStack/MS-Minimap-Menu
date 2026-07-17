@@ -1,0 +1,17 @@
+## Interface: 11200
+## Title: |cff33ffccMS Minimap Menu|r
+## Notes: Minimalist, alphabetical minimap-button list with a movable pfUI-themed launcher for the World of Warcraft 1.12.1 client.
+## Author: MoobStack
+## Version: 1.0.11
+## SavedVariables: MSMinimapMenuDB
+## Dependencies: !MSMinimapMenuCapture
+## OptionalDeps: OctoMinimapMenu, pfUI, MBB, MinimapButtonFrame
+## X-Category: Interface Enhancements
+## X-Publisher: MoobStack
+## X-Website: https://github.com/MoobStack/MS-Minimap-Menu
+## X-Compatible-With: World of Warcraft 1.12.1
+
+MSMinimapMenu_Bootstrap.lua
+MSMinimapMenu_Core.lua
+MSMinimapMenu_CaptureBridge.lua
+MSMinimapMenu_UI.lua

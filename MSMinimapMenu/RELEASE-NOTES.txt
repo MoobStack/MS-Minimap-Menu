@@ -1,0 +1,75 @@
+# MS Minimap Menu v1.0.11
+
+MS Minimap Menu v1.0.11 is the MoobStack rebrand of OctoMinimapMenu 1.0.10. The release preserves the working minimap-only collection behavior while introducing MS-prefixed source names, commands, frames, saved variables, companion-addon names, migration support, and GitHub documentation.
+
+## Changes
+
+- Renamed the addon to **MS Minimap Menu** and the internal folder to `MSMinimapMenu`.
+- Renamed the required early-capture companion to `!MSMinimapMenuCapture`.
+- Updated author and publisher branding to MoobStack.
+- Added `/msminimap`, `/msmm`, and `/msminimapmenu`.
+- Preserved `/omm`, `/octominimap`, and `/octomapmenu` as legacy aliases.
+- Migrates `OctoMinimapMenuDB` into `MSMinimapMenuDB` without modifying the old database.
+- Preserves launcher position, appearance, custom button names, exclusions, and collector preferences.
+- Includes a minimal temporary `OctoMinimapMenu` migration bridge in the update archive.
+- Adds an early command bootstrap for load diagnostics.
+- Uses server-neutral World of Warcraft 1.12.1 / Interface 11200 compatibility wording.
+- Preserves event-driven discovery, strict minimap-only filtering, pfUI theming, collector suppression, manual deep scanning, and original-button restoration.
+- Preserves direct compatibility for Looking For Turtles, pfQuest, Atlas-CFM, and Flight Tracker.
+- Preserves the version 1.0.10 configuration-field compatibility fix and the no-recurring-deep-scan performance model.
+
+## Clean installation
+
+1. Completely exit World of Warcraft.
+2. Extract the clean archive into `World of Warcraft\Interface\AddOns\`.
+3. Confirm:
+
+   ```text
+   Interface\AddOns\MSMinimapMenu\MSMinimapMenu.toc
+   Interface\AddOns\!MSMinimapMenuCapture\!MSMinimapMenuCapture.toc
+   ```
+
+4. Enable **MS Minimap Menu** and **MS Minimap Menu Capture**.
+5. Log in, wait for the initial safety delay, and run `/msminimap status`.
+
+## Updating from OctoMinimapMenu 1.0.10
+
+1. Completely exit World of Warcraft.
+2. Delete the old code folders `OctoMinimapMenu` and `!OctoMinimapMenuCapture` from `Interface\AddOns`. Saved settings under `WTF` are unaffected.
+3. Extract the update archive into `Interface\AddOns`.
+4. Enable:
+
+   ```text
+   MS Minimap Menu
+   MS Minimap Menu Capture
+   MS Minimap Menu Legacy Migration
+   ```
+
+5. Log in and run:
+
+   ```text
+   /msminimap status
+   ```
+
+6. Verify that the saved-data line reports an import or completed migration.
+7. Confirm the launcher position, custom names, exclusions, and appearance.
+8. Exit normally so `MSMinimapMenuDB` is written.
+9. Verify the new database on a later login before removing the temporary `OctoMinimapMenu` migration bridge.
+
+## Compatibility
+
+World of Warcraft 1.12.1 — Interface 11200.
+
+Designed for the World of Warcraft 1.12.1 client using Interface 11200. Compatibility may vary across community-maintained client modifications.
+
+## Downloads
+
+- `MoobStack-MSMinimapMenu-v1.0.11-Clean.zip` — clean installation containing `MSMinimapMenu` and `!MSMinimapMenuCapture`.
+- `MoobStack-MSMinimapMenu-v1.0.11-Update.zip` — settings-preserving update containing the two current addon folders and the temporary `OctoMinimapMenu` migration bridge.
+- `MoobStack-MSMinimapMenu-v1.0.11-Source.zip` — GitHub-ready source, migration bridge, and documentation bundle.
+
+## Important notes
+
+- The capture companion is required and must remain a sibling of the main addon folder.
+- Normal discovery is event-driven. `/msminimap deep` is manual-only and may briefly pause on large addon installations.
+- The strict scope filter intentionally excludes clickable quest pins, gathering nodes, buffs, action buttons, and unrelated UI controls.

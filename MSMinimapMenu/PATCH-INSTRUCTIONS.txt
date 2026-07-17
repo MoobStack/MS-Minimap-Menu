@@ -1,0 +1,25 @@
+MS Minimap Menu 1.0.11 update instructions
+==========================================
+
+1. Completely exit World of Warcraft.
+2. Delete the former code folders:
+
+   Interface\AddOns\OctoMinimapMenu
+   Interface\AddOns\!OctoMinimapMenuCapture
+
+3. Extract the update archive directly into Interface\AddOns.
+4. Confirm these sibling folders exist:
+
+   !MSMinimapMenuCapture
+   MSMinimapMenu
+   OctoMinimapMenu
+
+5. Enable MS Minimap Menu, MS Minimap Menu Capture, and
+   MS Minimap Menu Legacy Migration.
+6. Log in and run /msminimap status.
+7. Confirm the saved-data line reports an import or completed migration.
+8. Exit normally so MSMinimapMenuDB is saved.
+9. Verify settings on a later login before removing the temporary
+   OctoMinimapMenu migration bridge.
+
+The old OctoMinimapMenuDB is not erased.
