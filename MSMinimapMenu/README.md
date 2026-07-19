@@ -2,7 +2,7 @@
 
 **MS Minimap Menu** is a minimalist, pfUI-aware minimap-button collector published by **MoobStack**. It removes genuine stock and addon launcher buttons from around the minimap and presents them in one clean, alphabetically sorted list opened from a movable bar or icon.
 
-- **Version:** 1.0.11
+- **Version:** 1.0.12
 - **Publisher:** MoobStack
 - **Internal addon name:** `MSMinimapMenu`
 - **Required companion:** `!MSMinimapMenuCapture`
@@ -17,6 +17,19 @@
 ---
 
 ## Changelog
+
+### 1.0.12
+
+- Fixed a bug that could classify clickable **world-map POIs and other full world-map assets** as minimap launcher buttons.
+- Added a hard world-map scope gate that runs before collector membership, frame-name, original-parent, position, icon, tooltip, and drag evidence.
+- Rejects named and anonymous frames whose current or original parent chain belongs to `WorldMapFrame`, `WorldMapDetailFrame`, or another `WorldMap*` object.
+- Rejects world-map POI metadata such as `worldMapPOI`, `mapPOI`, and `poiID`, including frames that were reparented after creation.
+- Updated the required early-capture companion to discard world-map descendants before they enter its registry.
+- Revalidates cached early-capture entries on every scan so a previously accepted frame cannot remain after it becomes identifiable as world-map content.
+- Removes stale world-map objects from the manual global-name registry and restores any formerly hidden frame during the next scan.
+- Added separate world-map rejection counters to `/msminimap status`.
+- Preserved the legitimate stock **World Map** minimap launcher and Atlas-CFM compatibility; texture paths alone are never treated as world-map hierarchy evidence.
+- Preserved event-driven discovery, strict minimap-only filtering, pfUI integration, custom names, exclusions, and all existing saved settings.
 
 ### 1.0.11
 
@@ -117,6 +130,8 @@ The scanner uses several forms of evidence before accepting a frame:
 
 Before acceptance, parent lineage and frame names are checked to reject ordinary UI widgets, including buffs, debuffs, aura buttons, action buttons, bags, spell buttons, unit frames, raid frames, and map-content nodes.
 
+Version 1.0.12 adds a separate, non-bypassable world-map-content gate. A frame is rejected before any positive launcher evidence is considered when its current or original parent chain belongs to the full world-map interface, its name identifies a `WorldMap*` object, or it exposes POI metadata. This rule also applies to frames already inside a minimap-button collector.
+
 ### Built-in and addon compatibility
 
 The list supports common stock controls such as:
@@ -139,7 +154,33 @@ Direct compatibility paths are included for:
 
 For pfQuest, the actual launcher is collected while clickable quest markers such as `pfMiniMapPin*` remain on the minimap and are never added to the button list.
 
+The stock **World Map** button listed above is the legitimate minimap control that opens the map. POIs, quest markers, zone buttons, overlays, notes, and all other controls belonging to the full world-map interface are never collected. Atlas-CFM remains supported even though its icon texture is stored under an `Interface\WorldMap` texture path, because texture paths are not used as world-map ownership evidence.
+
 Most other addons work through their original `OnClick`, `OnMouseDown`, and `OnMouseUp` handlers. An unusual launcher may require a manual rescan, deep scan, custom display name, or a future compatibility rule.
+
+---
+
+### Updating from MS Minimap Menu 1.0.11
+
+No saved-variable migration is required. The internal addon names and `MSMinimapMenuDB` remain unchanged.
+
+1. Completely exit World of Warcraft.
+2. Replace both current addon folders with the folders from the 1.0.12 Clean archive:
+
+   ```text
+   Interface\AddOns\MSMinimapMenu\
+   Interface\AddOns\!MSMinimapMenuCapture\
+   ```
+
+3. Do not delete `MSMinimapMenuDB` or the `WTF` directory.
+4. Log in, allow the normal safety-delayed scan to complete, and run:
+
+   ```text
+   /msminimap scan
+   /msminimap status
+   ```
+
+5. Any world-map POI that an earlier session had hidden is restored automatically when the new scan omits it.
 
 ---
 
@@ -484,15 +525,23 @@ Most rows forward the original frame's click or mouse handlers. Print the intern
 
 Try left-click and right-click where appropriate. A highly unusual launcher may require an addon-specific compatibility path.
 
-#### Quest markers or unrelated UI controls appear in the list
+#### Quest markers, world-map POIs, or unrelated UI controls appear in the list
 
-Use:
+Version 1.0.12 explicitly excludes the full world-map hierarchy as well as minimap quest and gathering nodes. First refresh the current candidate set:
+
+```text
+/msminimap scan
+/msminimap status
+/msminimap list
+```
+
+The status output includes separate **world-map assets rejected** and **other map content rejected** counters. To restore every collected launcher immediately while gathering diagnostics, use:
 
 ```text
 /msminimap disable
 ```
 
-This restores all original launchers immediately. Then collect diagnostics with `/msminimap status` and `/msminimap list` before re-enabling.
+The legitimate stock **World Map** launcher may remain in the list; content displayed inside the full world map must not.
 
 #### Settings did not migrate
 
@@ -516,7 +565,8 @@ Log out normally after migration so the new database is written.
 - The manual deep scan may briefly pause on an installation with many globals; it is never run automatically.
 - Conditional status buttons may be absent while inactive unless **Show currently unavailable buttons** is enabled.
 - Two addons with their own aggressive button collectors may attempt to reparent or reveal the same launcher repeatedly. MS Minimap Menu maintains accepted hidden states, but disabling the other collector is the cleanest solution.
-- Map pins and content nodes are intentionally excluded even when they are clickable and parented to the minimap.
+- Minimap pins and content nodes are intentionally excluded even when they are clickable and parented to the minimap.
+- Full world-map POIs, notes, overlays, zone controls, and descendants of `WorldMap*` frames are always excluded. The stock minimap World Map launcher is the only intentional map-opening control in the list.
 
 ### Temporary legacy identifiers
 

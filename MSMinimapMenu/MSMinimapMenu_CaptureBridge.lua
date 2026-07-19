@@ -195,9 +195,47 @@ local function OnCorePerimeter(frame)
   return nil
 end
 
+local WORLD_MAP_LAUNCHER_ALLOW = {
+  minimapworldmapbutton = 1,
+  minimapzonetextbutton = 1,
+}
+
+local function IsWorldMapContentName(name)
+  name = Lower(name)
+  if name == "" or WORLD_MAP_LAUNCHER_ALLOW[name] then return nil end
+  if string.sub(name, 1, 8) == "worldmap" or string.sub(name, 1, 9) == "world_map" then return 1 end
+  if string.find(name, "worldmappoi", 1, true) or string.find(name, "world_map_poi", 1, true) then return 1 end
+  if string.find(name, "worldmappin", 1, true) or string.find(name, "worldmapnote", 1, true) or string.find(name, "worldmapmarker", 1, true) then return 1 end
+  return nil
+end
+
+local function IsWorldMapContent(frame, originalParent)
+  if type(MSM.FrameIsWorldMapContent) == "function" then
+    local ok, value = pcall(MSM.FrameIsWorldMapContent, MSM, frame, originalParent)
+    if ok and value then return 1 end
+  end
+
+  local function CheckChain(startFrame)
+    local current = startFrame
+    local depth = 0
+    while IsFrame(current) and depth < 16 do
+      if current == _G["WorldMapFrame"] or current == _G["WorldMapDetailFrame"] then return 1 end
+      if IsWorldMapContentName(Name(current)) then return 1 end
+      current = Parent(current)
+      depth = depth + 1
+    end
+    return nil
+  end
+
+  if IsWorldMapContentName(Name(frame)) then return 1 end
+  if CheckChain(frame) then return 1 end
+  if originalParent and originalParent ~= frame and CheckChain(originalParent) then return 1 end
+  return nil
+end
+
 local function HasExplicitMinimapName(name)
   name = Lower(name)
-  if name == "" then return nil end
+  if name == "" or IsWorldMapContentName(name) then return nil end
   if string.find(name, "minimap", 1, true) or string.find(name, "mini_map", 1, true) then return 1 end
   if string.find(name, "mapbutton", 1, true) or string.find(name, "map_button", 1, true) then return 1 end
   if string.find(name, "mapicon", 1, true) or string.find(name, "map_icon", 1, true) then return 1 end
@@ -221,7 +259,8 @@ local function OwnerLauncherPolicy(owner)
   return nil
 end
 
-local function IsKnownMapContentNode(frame, name, owner)
+local function IsKnownMapContentNode(frame, name, owner, originalParent)
+  if IsWorldMapContent(frame, originalParent) or IsWorldMapContentName(name) then return 1, "world-map-content" end
   local lowered = Lower(name)
   if string.find(lowered, "pfminimappin", 1, true) == 1 then return 1 end
   if string.find(lowered, "pfmappin", 1, true) == 1 then return 1 end
@@ -267,7 +306,7 @@ end
 local PrepareIcon
 
 local function IsMinimapParentObject(frame)
-  if not IsFrame(frame) then return nil end
+  if not IsFrame(frame) or IsWorldMapContent(frame) then return nil end
   if frame == Minimap or frame == MinimapBackdrop or frame == _G["pfMinimap"] or frame == _G["pfMinimapButtons"] then return 1 end
   if type(MSM.IsCollectorFrame) == "function" then
     local ok, value = pcall(MSM.IsCollectorFrame, MSM, frame)
@@ -283,10 +322,12 @@ local function IsCapturedLauncher(frame, meta)
 
   local name = Name(frame)
   local owner = meta and Lower(meta.owner) or ""
+  if IsWorldMapContent(frame, meta and meta.parent) then return nil, "world-map-content" end
   -- Reject quest/map content before collector membership or original-parent
   -- evidence. pfQuest deliberately uses collector-compatible pin names, so the
   -- order is essential: a pin inside pfUI's collector is still a pin.
-  if IsKnownMapContentNode(frame, name, owner) then return nil, "map-content" end
+  local isContent, contentReason = IsKnownMapContentNode(frame, name, owner, meta and meta.parent)
+  if isContent then return nil, contentReason or "map-content" end
   local ownerPolicy = OwnerLauncherPolicy(owner)
   if ownerPolicy and ownerPolicy[Token(name)] then return 1, "scope" end
   if IsCollectorDescendant(frame) then return 1, "collector" end
@@ -467,6 +508,7 @@ end
 
 local OriginalAddCandidate = MSM.AddCandidate
 local function AddCapturedRecord(frame, meta, reason)
+  if IsWorldMapContent(frame, meta and meta.parent) then return nil end
   local frameName = Name(frame)
   local entry
   if frameName and (reason == "scope" or reason == "collector") then
@@ -499,11 +541,13 @@ function MSM:HarvestEarlyCapturedButtons()
   self.scanStats.captureRejectedUi = 0
   self.scanStats.captureRejectedScope = 0
   self.scanStats.captureRejectedMapContent = 0
+  self.scanStats.captureRejectedWorldMap = 0
   self.scanStats.captureMatchedByDrag = 0
   self.scanStats.captureMatchedStatic = 0
   self.scanStats.anonymous = self.scanStats.anonymous or 0
   self.scanStats.captureDropped = type(registry) == "table" and tonumber(registry.dropped) or 0
   self.scanStats.captureFilteredMapContent = type(registry) == "table" and tonumber(registry.filteredMapContent) or 0
+  self.scanStats.captureFilteredWorldMap = type(registry) == "table" and tonumber(registry.filteredWorldMapContent) or 0
   if type(registry) ~= "table" or type(registry.frames) ~= "table" then return end
 
   if self.captureRescanAll then
@@ -515,15 +559,29 @@ function MSM:HarvestEarlyCapturedButtons()
   -- Re-add only the small accepted set to each transactional scan. This avoids
   -- reclassifying thousands of ordinary captured UI frames on every event.
   local nextAccepted = {}
-  local frame, record, entry
+  local frame, record, entry, cachedAccepted, cachedReason
   for frame, record in pairs(self.captureAcceptedByFrame or {}) do
     if IsFrame(frame) and not IsOurFrame(frame) and HasAction(frame) then
-      entry = AddCapturedRecord(frame, record.meta, record.reason)
       self.scanStats.captureChecked = self.scanStats.captureChecked + 1
       self.scanStats.captureCached = self.scanStats.captureCached + 1
-      if entry then
-        nextAccepted[frame] = record
-        self.scanStats.captureFound = self.scanStats.captureFound + 1
+      cachedAccepted, cachedReason = IsCapturedLauncher(frame, record.meta)
+      if cachedAccepted then
+        entry = AddCapturedRecord(frame, record.meta, cachedReason or record.reason)
+        if entry then
+          record.reason = cachedReason or record.reason
+          nextAccepted[frame] = record
+          self.scanStats.captureFound = self.scanStats.captureFound + 1
+        end
+      elseif cachedReason == "world-map-content" then
+        self.scanStats.captureRejectedWorldMap = self.scanStats.captureRejectedWorldMap + 1
+        self.scanStats.worldMapContentRejected = (self.scanStats.worldMapContentRejected or 0) + 1
+      elseif cachedReason == "map-content" then
+        self.scanStats.captureRejectedMapContent = self.scanStats.captureRejectedMapContent + 1
+        self.scanStats.contentNodesRejected = (self.scanStats.contentNodesRejected or 0) + 1
+      elseif cachedReason == "ui" or cachedReason == "pfui-ui" then
+        self.scanStats.captureRejectedUi = self.scanStats.captureRejectedUi + 1
+      else
+        self.scanStats.captureRejectedScope = self.scanStats.captureRejectedScope + 1
       end
     end
   end
@@ -556,6 +614,9 @@ function MSM:HarvestEarlyCapturedButtons()
           end
         elseif reason == "ui" or reason == "pfui-ui" then
           self.scanStats.captureRejectedUi = self.scanStats.captureRejectedUi + 1
+        elseif reason == "world-map-content" then
+          self.scanStats.captureRejectedWorldMap = self.scanStats.captureRejectedWorldMap + 1
+          self.scanStats.worldMapContentRejected = (self.scanStats.worldMapContentRejected or 0) + 1
         elseif reason == "map-content" then
           self.scanStats.captureRejectedMapContent = self.scanStats.captureRejectedMapContent + 1
           self.scanStats.contentNodesRejected = (self.scanStats.contentNodesRejected or 0) + 1
@@ -579,5 +640,6 @@ function MSM:Status()
   OriginalStatus(self)
   local stats = self.scanStats or {}
   self:Print("Early addon capture: " .. ((stats.captureActive or 0) == 1 and "active" or "missing") .. " | matched: " .. tostring(stats.captureFound or 0) .. " | cached: " .. tostring(stats.captureCached or 0) .. " | newly checked: " .. tostring(stats.captureNewChecked or 0) .. " | anonymous: " .. tostring(stats.anonymous or 0))
-  self:Print("Capture evidence: static " .. tostring(stats.captureMatchedStatic or 0) .. " | draggable " .. tostring(stats.captureMatchedByDrag or 0) .. " | UI widgets rejected " .. tostring(stats.captureRejectedUi or 0) .. " | map content rejected " .. tostring((stats.captureRejectedMapContent or 0) + (stats.captureFilteredMapContent or 0)) .. " | other out-of-scope " .. tostring(stats.captureRejectedScope or 0) .. " | dropped " .. tostring(stats.captureDropped or 0))
+  local filteredOtherMap = math.max(0, (stats.captureFilteredMapContent or 0) - (stats.captureFilteredWorldMap or 0))
+  self:Print("Capture evidence: static " .. tostring(stats.captureMatchedStatic or 0) .. " | draggable " .. tostring(stats.captureMatchedByDrag or 0) .. " | UI widgets rejected " .. tostring(stats.captureRejectedUi or 0) .. " | world-map assets rejected " .. tostring((stats.captureRejectedWorldMap or 0) + (stats.captureFilteredWorldMap or 0)) .. " | other map content rejected " .. tostring((stats.captureRejectedMapContent or 0) + filteredOtherMap) .. " | other out-of-scope " .. tostring(stats.captureRejectedScope or 0) .. " | dropped " .. tostring(stats.captureDropped or 0))
 end

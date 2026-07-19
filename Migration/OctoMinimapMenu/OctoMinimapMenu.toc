@@ -1,0 +1,9 @@
+## Interface: 11200
+## Title: |cff888888MS Minimap Menu Legacy Migration|r
+## Notes: Temporary saved-variable bridge for upgrading OctoMinimapMenu 1.0.10 to MS Minimap Menu 1.0.12.
+## Author: MoobStack
+## Version: 1.0.12
+## SavedVariables: OctoMinimapMenuDB
+## X-Category: Interface Enhancements
+
+OctoMinimapMenu_Migration.lua

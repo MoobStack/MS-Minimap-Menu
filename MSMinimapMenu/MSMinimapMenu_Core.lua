@@ -9,8 +9,8 @@ local MSM = MSMinimapMenu
 
 MSM.displayName = "MS Minimap Menu"
 MSM.publisher = "MoobStack"
-MSM.version = "1.0.11"
-MSM.versionNumber = 10011
+MSM.version = "1.0.12"
+MSM.versionNumber = 10012
 MSM.interfaceVersion = 11200
 MSM.addonName = "MSMinimapMenu"
 MSM.coreLoaded = nil
@@ -383,7 +383,7 @@ function MSM:MigrateLegacySavedVariables()
       MSMinimapMenuDB._moobStackMigration = markerTable
     end
     MSMinimapMenuDB._moobStackMigration.octoMinimapMenu1010 = 1
-    MSMinimapMenuDB._moobStackMigration.completedBy = "MS Minimap Menu 1.0.11"
+    MSMinimapMenuDB._moobStackMigration.completedBy = "MS Minimap Menu 1.0.12"
     MSMinimapMenuDB._moobStackMigration.sourceVersion = "1.0.10"
     self.legacyImportedAtLoad = 1
   end
@@ -451,6 +451,65 @@ local function SafeGetParent(frame)
   if not method then return nil end
   local ok, parent = pcall(method, frame)
   if ok and IsFrameObject(parent) then return parent end
+  return nil
+end
+
+-- World-map POIs and other full-map assets are content, never minimap launcher
+-- buttons. The one stock minimap button that opens the world map remains an
+-- allowed launcher; its name begins with MiniMap rather than WorldMap.
+local WORLD_MAP_LAUNCHER_ALLOW = {
+  ["minimapworldmapbutton"] = 1,
+  ["minimapzonetextbutton"] = 1,
+}
+
+local function IsWorldMapContentName(name)
+  if type(name) ~= "string" or name == "" then return nil end
+  local lowered = Lower(name)
+  if WORLD_MAP_LAUNCHER_ALLOW[lowered] then return nil end
+  if string.sub(lowered, 1, 8) == "worldmap" then return 1 end
+  if string.sub(lowered, 1, 9) == "world_map" then return 1 end
+  if string.find(lowered, "worldmappoi", 1, true) then return 1 end
+  if string.find(lowered, "world_map_poi", 1, true) then return 1 end
+  if string.find(lowered, "worldmappin", 1, true) then return 1 end
+  if string.find(lowered, "worldmapnote", 1, true) then return 1 end
+  if string.find(lowered, "worldmapmarker", 1, true) then return 1 end
+  return nil
+end
+
+function MSM:IsWorldMapContentName(name)
+  return IsWorldMapContentName(name)
+end
+
+-- Check both current and original parent chains. Early-captured addon frames may
+-- be reparented after creation, so the original parent is important evidence.
+function MSM:FrameIsWorldMapContent(frame, originalParent)
+  local function HasPOIMetadata(object)
+    if not IsObjectLike(object) then return nil end
+    local fields = { "worldMapPOI", "worldMapPoi", "mapPOI", "mapPoi", "poiID", "poiId" }
+    local index, ok, value
+    for index = 1, table.getn(fields) do
+      ok, value = pcall(function() return object[fields[index]] end)
+      if ok and value ~= nil and value ~= false then return 1 end
+    end
+    return nil
+  end
+
+  local function CheckChain(startFrame)
+    local current = startFrame
+    local depth = 0
+    while current and depth < 16 do
+      if current == _G["WorldMapFrame"] or current == _G["WorldMapDetailFrame"] then return 1 end
+      if IsWorldMapContentName(GetFrameName(current)) then return 1 end
+      current = SafeGetParent(current)
+      depth = depth + 1
+    end
+    return nil
+  end
+
+  if IsWorldMapContentName(GetFrameName(frame)) then return 1 end
+  if HasPOIMetadata(frame) then return 1 end
+  if CheckChain(frame) then return 1 end
+  if originalParent and originalParent ~= frame and CheckChain(originalParent) then return 1 end
   return nil
 end
 
@@ -1203,6 +1262,7 @@ end
 
 function MSM:IsMapRelatedFrame(frame)
   if not IsFrameObject(frame) then return nil end
+  if self:FrameIsWorldMapContent(frame) then return nil end
   -- UIParent is a traversal boundary, not evidence that a frame belongs to the
   -- minimap. Treating it as a map root would classify every normal UI frame as
   -- a minimap control merely because it is anchored to UIParent.
@@ -1227,13 +1287,14 @@ function MSM:FrameHasMapAnchor(frame)
   for index = 1, count do
     ok, point, relative = pcall(method, frame, index)
     if not ok and index == 1 then ok, point, relative = pcall(method, frame) end
-    if ok and point and self:IsMapRelatedFrame(relative) then return 1 end
+    if ok and point and relative and not self:FrameIsWorldMapContent(relative) and self:IsMapRelatedFrame(relative) then return 1 end
   end
   return nil
 end
 
 local function HasStrongMinimapToken(name)
   if type(name) ~= "string" or name == "" then return nil end
+  if IsWorldMapContentName(name) then return nil end
   local lowered = Lower(name)
   if string.find(lowered, "minimap", 1, true) then return 1 end
   if string.find(lowered, "mini_map", 1, true) then return 1 end
@@ -1298,6 +1359,7 @@ end
 -- action-bar containers are never exempt.
 function MSM:FrameHasNonMinimapWidgetLineage(frame, ownExplicitMinimapName)
   if not IsFrameObject(frame) then return nil end
+  if self:FrameIsWorldMapContent(frame) then return 1, "world-map" end
   local current = frame
   local depth = 0
   local name, blocked, token
@@ -1347,6 +1409,7 @@ end
 -- mistaken for addon launchers.
 function MSM:FrameHasMapAnchorChain(frame)
   if not IsFrameObject(frame) then return nil end
+  if self:FrameIsWorldMapContent(frame) then return nil end
   local current = frame
   local depth = 0
   while current and depth < 5 do
@@ -1362,6 +1425,7 @@ end
 
 local function IsKnownContentNodeName(name)
   if type(name) ~= "string" or name == "" then return nil end
+  if IsWorldMapContentName(name) then return 1 end
   local lowered = Lower(name)
   -- pfQuest creates one real launcher (pfQuestIcon) and a large pool of
   -- clickable minimap quest nodes named pfMiniMapPin*. Only the launcher is a
@@ -1398,6 +1462,7 @@ end
 
 function MSM:FrameHasNonMinimapWidgetContext(frame)
   if not IsFrameObject(frame) then return nil end
+  if self:FrameIsWorldMapContent(frame) then return 1 end
   local current = frame
   local depth = 0
   while current and depth < 6 do
@@ -1416,6 +1481,10 @@ end
 function MSM:FrameIsInStrictMinimapScope(frame, frameName)
   if not IsFrameObject(frame) or IsOurFrame(frame) then return nil end
   local name = frameName or GetFrameName(frame)
+  if self:FrameIsWorldMapContent(frame) or IsWorldMapContentName(name) then
+    if self.scanStats then self.scanStats.worldMapContentRejected = (self.scanStats.worldMapContentRejected or 0) + 1 end
+    return nil
+  end
   if IsKnownContentNodeName(name) then
     if self.scanStats then self.scanStats.contentNodesRejected = (self.scanStats.contentNodesRejected or 0) + 1 end
     return nil
@@ -1459,6 +1528,7 @@ end
 
 function MSM:IsPotentialGlobalButtonName(name)
   if type(name) ~= "string" or name == "" then return nil end
+  if IsWorldMapContentName(name) then return nil end
   if IGNORE_EXACT[name] then return nil end
   local ignoredLower = Lower(name)
   local ignoredIndex
@@ -1513,6 +1583,10 @@ function MSM:IsCandidate(frame, fromRoot)
   if not IsFrameObject(frame) then return nil end
   if IsOurFrame(frame) then return nil end
   local name = GetFrameName(frame)
+  if self:FrameIsWorldMapContent(frame) or IsWorldMapContentName(name) then
+    if self.scanStats then self.scanStats.worldMapContentRejected = (self.scanStats.worldMapContentRejected or 0) + 1 end
+    return nil
+  end
   if not name then return nil end
   if IsIgnoredName(name) then return nil end
   local known = IsKnownFrame(name)
@@ -2164,6 +2238,9 @@ function MSM:ScanGlobalButtonRegistry(fullScan)
   for globalName, frame in pairs(self.globalRegistry) do
     if _G[globalName] ~= frame or not IsFrameObject(frame) then
       table.insert(stale, globalName)
+    elseif self:FrameIsWorldMapContent(frame) or IsWorldMapContentName(globalName) then
+      table.insert(stale, globalName)
+      if self.scanStats then self.scanStats.worldMapContentRejected = (self.scanStats.worldMapContentRejected or 0) + 1 end
     elseif self:FrameIsNearMinimap(frame, globalName) or self:IsInsideManagedCollector(frame) then
       entry = self:AddCandidate(frame, 1)
       if entry and self.scanStats then self.scanStats.globalFound = (self.scanStats.globalFound or 0) + 1 end
@@ -2274,7 +2351,7 @@ function MSM:ScanNow(force, fullGlobalScan)
   local oldOrder = self.entryOrder or {}
   local newEntries = {}
   self.scanEntries = newEntries
-  self.scanStats = { roots = 0, candidates = 0, invalid = 0, captured = 0, registry = 0, globalFound = 0, globalChecked = 0, iconFallbacks = 0, iconErrors = 0, scopeRejected = 0, contentNodesRejected = 0, mode = "event-driven-minimap-scope" }
+  self.scanStats = { roots = 0, candidates = 0, invalid = 0, captured = 0, registry = 0, globalFound = 0, globalChecked = 0, iconFallbacks = 0, iconErrors = 0, scopeRejected = 0, contentNodesRejected = 0, worldMapContentRejected = 0, mode = "event-driven-minimap-scope" }
 
   local ok, errorText = pcall(function() MSM:CollectScanCandidates(doGlobalScan) end)
   self.scanEntries = nil
@@ -2497,7 +2574,7 @@ function MSM:Status()
   self:Print("pfUI/collector registry hits: " .. tostring(stats.registry or 0) .. " | global minimap buttons: " .. tostring(stats.globalFound or 0) .. " | global names checked: " .. tostring(stats.globalChecked or 0))
   self:Print("Roots: " .. tostring(stats.roots or 0) .. " | candidates: " .. tostring(stats.candidates or 0) .. " | outside scope: " .. tostring(stats.scopeRejected or 0) .. " | fallback icons: " .. tostring(stats.iconFallbacks or 0) .. " | icon errors isolated: " .. tostring(stats.iconErrors or 0) .. " | unsafe skipped: " .. tostring(stats.invalid or 0))
   self:Print("Automatic deep scans: off | last manual deep scan: " .. ((self.lastDeepScan or 0) > 0 and string.format("%.1fs ago", GetTime() - self.lastDeepScan) or "never"))
-  self:Print("Map content rejected: " .. tostring(stats.contentNodesRejected or 0) .. " | only genuine launcher buttons are listed.")
+  self:Print("World-map assets rejected: " .. tostring(stats.worldMapContentRejected or 0) .. " | other map content rejected: " .. tostring(stats.contentNodesRejected or 0) .. ".")
   self:Print("Scan failures this session: " .. tostring(self.scanFailures or 0) .. (self.lastScanError and (" | last: " .. self.lastScanError) or ""))
   local pfButtons = type(pfUI) == "table" and SafeGetField(pfUI, "addonbuttons") or nil
   if not IsFrameObject(pfButtons) then pfButtons = _G["pfMinimapButtons"] end

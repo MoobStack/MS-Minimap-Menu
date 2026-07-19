@@ -2,7 +2,7 @@
 ## Title: |cff33ffccMS Minimap Menu Capture|r
 ## Notes: Required early minimap-launcher capture companion for MS Minimap Menu.
 ## Author: MoobStack
-## Version: 1.0.11
+## Version: 1.0.12
 ## X-Category: Interface Enhancements
 ## X-Publisher: MoobStack
 ## X-Website: https://github.com/MoobStack/MS-Minimap-Menu

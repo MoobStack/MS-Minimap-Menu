@@ -1,5 +1,5 @@
 -- MSMinimapMenu_Bootstrap.lua
--- MS Minimap Menu 1.0.11 early command bootstrap for the WoW 1.12.1 client.
+-- MS Minimap Menu 1.0.12 early command bootstrap for the WoW 1.12.1 client.
 -- Loaded before the core so commands remain available for load diagnostics.
 
 MSMinimapMenu = MSMinimapMenu or {}
@@ -8,7 +8,7 @@ local MSM = MSMinimapMenu
 OctoMinimapMenu = MSMinimapMenu
 
 MSM.bootstrapLoaded = 1
-MSM.bootstrapVersion = "1.0.11"
+MSM.bootstrapVersion = "1.0.12"
 MSM.loadStage = MSM.loadStage or "bootstrap loaded"
 
 local function BootstrapPrint(message)

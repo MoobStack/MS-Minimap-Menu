@@ -1,0 +1,8 @@
+## Interface: 11200
+## Title: |cff888888MS Minimap Menu Legacy Capture Retirement|r
+## Notes: Inert transition stub that prevents the former capture helper from loading after the MoobStack rebrand.
+## Author: MoobStack
+## Version: 1.0.12
+## X-Category: Interface Enhancements
+
+OctoMinimapMenuCapture_Retired.lua

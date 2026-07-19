@@ -1,25 +1,39 @@
-MS Minimap Menu 1.0.11 update instructions
-==========================================
+# Upgrading to MS Minimap Menu 1.0.12
+
+## From MS Minimap Menu 1.0.11
 
 1. Completely exit World of Warcraft.
-2. Delete the former code folders:
+2. Replace both addon folders with the folders from the Clean archive:
 
-   Interface\AddOns\OctoMinimapMenu
-   Interface\AddOns\!OctoMinimapMenuCapture
+   ```text
+   Interface\AddOns\MSMinimapMenu\
+   Interface\AddOns\!MSMinimapMenuCapture\
+   ```
 
-3. Extract the update archive directly into Interface\AddOns.
-4. Confirm these sibling folders exist:
+3. Preserve `MSMinimapMenuDB` and the `WTF` directory.
+4. Enable both addon entries.
+5. Log in and run:
 
-   !MSMinimapMenuCapture
-   MSMinimapMenu
-   OctoMinimapMenu
+   ```text
+   /msminimap scan
+   /msminimap status
+   ```
 
-5. Enable MS Minimap Menu, MS Minimap Menu Capture, and
-   MS Minimap Menu Legacy Migration.
-6. Log in and run /msminimap status.
-7. Confirm the saved-data line reports an import or completed migration.
-8. Exit normally so MSMinimapMenuDB is saved.
-9. Verify settings on a later login before removing the temporary
-   OctoMinimapMenu migration bridge.
+No migration bridge is required for a 1.0.11 update.
 
-The old OctoMinimapMenuDB is not erased.
+## Directly from OctoMinimapMenu 1.0.10
+
+Use the 1.0.12 Update archive. It contains these four sibling folders:
+
+```text
+MSMinimapMenu
+!MSMinimapMenuCapture
+OctoMinimapMenu
+!OctoMinimapMenuCapture
+```
+
+The former-name folders contain only a saved-variable bridge and an inert capture-retirement stub. Enable all four entries for the first migration login, verify `/msminimap status`, log out normally, and then remove the two former-name folders after the migrated settings survive another login.
+
+## Expected result
+
+The stock minimap World Map launcher remains valid. No world-map POI or other asset belonging to the full map interface is collected.

@@ -1,58 +1,5 @@
-# MS Minimap Menu
+# MS Minimap Menu 1.0.12 Documentation
 
-**MS Minimap Menu** is a minimalist, pfUI-aware minimap-button collector published by **MoobStack**. It removes genuine stock and addon launcher buttons from around the minimap and presents them in one clean, alphabetically sorted list opened from a movable bar or icon.
-
-- **Version:** 1.0.12
-- **Publisher:** MoobStack
-- **Internal addon name:** `MSMinimapMenu`
-- **Required companion:** `!MSMinimapMenuCapture`
-- **Client:** World of Warcraft 1.12.1
-- **Interface:** 11200
-- **Repository:** [https://github.com/MoobStack/MS-Minimap-Menu](https://github.com/MoobStack/MS-Minimap-Menu)
-
-> Designed for the World of Warcraft 1.12.1 client using Interface 11200. Compatibility may vary across community-maintained client modifications.
-
-[Download the latest release](https://github.com/MoobStack/MS-Minimap-Menu/releases/latest)
-
----
-
-## Changelog
-
-### 1.0.12
-
-- Fixed a bug that could classify clickable **world-map POIs and other full world-map assets** as minimap launcher buttons.
-- Added a hard world-map scope gate that runs before collector membership, frame-name, original-parent, position, icon, tooltip, and drag evidence.
-- Rejects named and anonymous frames whose current or original parent chain belongs to `WorldMapFrame`, `WorldMapDetailFrame`, or another `WorldMap*` object.
-- Rejects world-map POI metadata such as `worldMapPOI`, `mapPOI`, and `poiID`, including frames that were reparented after creation.
-- Updated the required early-capture companion to discard world-map descendants before they enter its registry.
-- Revalidates cached early-capture entries on every scan so a previously accepted frame cannot remain after it becomes identifiable as world-map content.
-- Removes stale world-map objects from the manual global-name registry and restores any formerly hidden frame during the next scan.
-- Added separate world-map rejection counters to `/msminimap status`.
-- Preserved the legitimate stock **World Map** minimap launcher and Atlas-CFM compatibility; texture paths alone are never treated as world-map hierarchy evidence.
-- Preserved event-driven discovery, strict minimap-only filtering, pfUI integration, custom names, exclusions, and all existing saved settings.
-
-### 1.0.11
-
-- Rebranded **OctoMinimapMenu** as **MS Minimap Menu** under the MoobStack publisher.
-- Renamed the main addon folder, required early-capture companion, TOC files, Lua source files, addon namespace, frame names, saved-variable database, UI branding, messages, and documentation to MS-prefixed names.
-- Added `/msminimap`, `/msmm`, and `/msminimapmenu` as the primary slash-command aliases.
-- Retained `/omm`, `/octominimap`, and `/octomapmenu` as legacy aliases for existing macros and habits.
-- Added a settings-preserving migration from `OctoMinimapMenuDB` to `MSMinimapMenuDB` without deleting or modifying the former database.
-- Added a minimal temporary `OctoMinimapMenu` migration bridge for update installations; the previous full addon implementation is not loaded.
-- Renamed the required capture companion from `!OctoMinimapMenuCapture` to `!MSMinimapMenuCapture`.
-- Added an early command bootstrap so primary and legacy commands can report load diagnostics even when the main core does not complete initialization.
-- Updated public compatibility wording to World of Warcraft 1.12.1 and Interface 11200 without tying the addon to a particular community server.
-- Preserved the strict minimap-only scope filters, pfUI-aware styling, event-driven discovery, manual deep scan, alphabetical list, per-button names and exclusions, original-button restoration, and addon-specific activation behavior from version 1.0.10.
-- Preserved direct compatibility for Looking For Turtles, pfQuest, Atlas-CFM, and Flight Tracker.
-- Preserved the version 1.0.10 old-client configuration-field compatibility fix and the version 1.0.8 performance change that removed recurring deep scans.
-
-### Legacy history
-
-Versions **1.0.0 through 1.0.10** were published under the **OctoMinimapMenu** name.
-
----
-
-## Documentation
 
 ### Overview
 
