@@ -1,6 +1,6 @@
 # MS Minimap Menu
 
-**MS Minimap Menu** is a minimalist, pfUI-aware minimap-button collector published by **MoobStack**. It removes genuine stock and addon launcher buttons from around the minimap and presents them in one clean, alphabetically sorted list opened from a movable bar or icon.
+**MS Minimap Menu** is a minimalist, pfUI-aware minimap-button collector. It removes genuine stock and addon launcher buttons from around the minimap and presents them in one clean, alphabetically sorted list opened from a movable bar or icon.
 
 - **Version:** 1.0.12
 - **Publisher:** MoobStack
